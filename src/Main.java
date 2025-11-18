@@ -1,3 +1,4 @@
+
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import java.util.Scanner;
@@ -9,23 +10,10 @@ import java.io.FileInputStream;
 
 public class Main {
 
-    // Interface que representa a DLL, usando JNA
     public interface ImpressoraDLL extends Library {
 
-        // Caminho completo para a DLL
         ImpressoraDLL INSTANCE = (ImpressoraDLL) Native.load(
-                "C:\\Users\\eli_nascimento\\Downloads\\Java-Aluno Graduacao\\E1_Impressora01.dll",
-                ImpressoraDLL.class
-        );
-
-
-        private static String lerArquivoComoString(String path) throws IOException {
-            FileInputStream fis = new FileInputStream(path);
-            byte[] data = fis.readAllBytes();
-            fis.close();
-            return new String(data, StandardCharsets.UTF_8);
-        }
-
+                "C:\\Users\\eli_nascimento\\Downloads\\Java-Aluno Graduacao\\Java-Aluno Graduacao\\E1_Impressora01.dll", ImpressoraDLL.class);
 
         int AbreConexaoImpressora(int tipo, String modelo, String conexao, int param);
 
@@ -71,131 +59,172 @@ public class Main {
     private static String modelo;
     private static String conexao;
     private static int parametro;
-
     private static final Scanner scanner = new Scanner(System.in);
 
-    private static String capturarEntrada(String mensagem) {
-        System.out.print(mensagem);
+    private static String capturarEntrada(String msg) {
+        System.out.print(msg);
         return scanner.nextLine();
     }
-// == FUNÇÕES PRINCIPAIS ==
+
+    private static String lerArquivoComoString(String path) throws IOException {
+        FileInputStream fis = new FileInputStream(path);
+        byte[] data = fis.readAllBytes();
+        fis.close();
+        return new String(data, StandardCharsets.UTF_8);
+    }
 
     public static void configurarConexao() {
-        System.out.println("Digite o tipo de impressora:");
-        tipo = scanner.nextInt();
-        scanner.nextLine();
-
-        System.out.println("Digite o tipo de conexao:");
-        conexao = scanner.nextLine();
-
-        System.out.println("Digite o modelo:");
-        modelo = scanner.nextLine();
-
-        System.out.println("Digite o parametro:");
-        parametro = scanner.nextInt();
-
-        System.out.println("Dados salvos com sucesso!");
+        tipo = Integer.parseInt(capturarEntrada("Tipo da conexão: "));
+        modelo = capturarEntrada("Modelo: ");
+        conexao = capturarEntrada("Conexão: ");
+        parametro = Integer.parseInt(capturarEntrada("Parâmetro: "));
+        System.out.println("Configuração salva.");
     }
 
     public static void abrirConexao() {
-        if(!tipo || !modelo || !conexao || !parametro)
-        {
-            configurarConexao();
+        if (conexaoAberta) {
+            System.out.println("Conexão já aberta.");
+            return;
         }
-        if (!conexaoAberta){
-            int retorno = ImpressoraDLL.INSTANCE.AbreConexaoImpressora(tipo, modelo,conexao, parametro);
-
-            if(retorno == 0){
-                conexaoAberta =true;
-                System.out.println(" Conexao aberta com sucesso!");
-            } else {
-                System.out.println("Erro ao abrir conexao. Retorno"+ retorno );
-            }
+        int retorno = ImpressoraDLL.INSTANCE.AbreConexaoImpressora(tipo, modelo, conexao, parametro);
+        if (retorno == 0) {
+            conexaoAberta = true;
+            System.out.println("Conexão estabelecida.");
         } else {
-            System.out.println("Conexao ja esta aberta");
+            System.out.println("Erro ao abrir conexão: " + retorno);
         }
     }
 
     public static void fecharConexao() {
-
+        if (!conexaoAberta) {
+            System.out.println("Nenhuma conexão ativa.");
+            return;
+        }
+        int retorno = ImpressoraDLL.INSTANCE.FechaConexaoImpressora();
+        if (retorno == 0) {
+            conexaoAberta = false;
+            System.out.println("Conexão encerrada.");
+        } else {
+            System.out.println("Erro ao encerrar: " + retorno);
+        }
     }
 
-    public static void main(String[] args) {
-        while (true) {
-            System.out.println("\n*************************************************");
-            System.out.println("**************** MENU IMPRESSORA *******************");
-            System.out.println("*************************************************\n");
+    public static void imprimeXMLSAT() {
+        if (conexaoAberta) {
+            String dados = "path=C:\\Users\\eli_nascimento\\Downloads\\Java-Aluno Graduacao\\Java-Aluno Graduacao\\XMLSAT.xml";
+            int retorno = ImpressoraDLL.INSTANCE.ImprimeXMLSAT(dados, 0);
 
-            System.out.println("1  - Configurar Conexao");
-            System.out.println("2  - Abrir Conexao");
-            System.out.println("3  - Impressao Texto");
-            System.out.println("4  - Impressao QRCode");
-            System.out.println("5  - Impressao Cod Barras");
-            System.out.println("6  - Impressao XML SAT");
-            System.out.println("7  - Impressao XML Canc SAT");
-            System.out.println("8  - Abrir Gaveta Elgin");
-            System.out.println("9  - Abrir Gaveta");
-            System.out.println("10 - Sinal Sonoro");
-            System.out.println("0  - Fechar Conexao e Sair");
-            System.out.println("--------------------------------------");
+            if (retorno == 0) {
+                System.out.println("Impressao de xml sat OK");
+            } else {
+                System.out.println("Erro. Retorno " + retorno);
+            }
+        } else {
+            System.out.println("Abra a conexao primeiro.");
 
-            String escolha = capturarEntrada("\nDigite a opção desejada: ");
+        }
+    }
 
-            if (escolha.equals("0")) {
+    public static void ImprimeXMLCancelamentoSAT() {
+        if (conexaoAberta) {
+            String dados = "path=C:\\Users\\eli_nascimento\\Downloads\\Java-Aluno Graduacao\\Java-Aluno Graduacao\\CANC_SAT.xml";
+            String assQRCode = "Q5DLkpdRijIRGY6YSSNsTWK1TztHL1vD0V1Jc4spo/CEUqICEb9SFy82ym8EhBRZjbh3btsZhF+sjHqEMR159i4agru9x6KsepK/q0E2e5xlU5cv3m1woYfgHyOkWDNcSdMsS6bBh2Bpq6s89yJ9Q6qh/J8YHi306ce9Tqb/drKvN2XdE5noRSS32TAWuaQEVd7u+TrvXlOQsE3fHR1D5f1saUwQLPSdIv01NF6Ny7jZwjCwv1uNDgGZONJdlTJ6p0ccqnZvuE70aHOI09elpjEO6Cd+orI7XHHrFCwhFhAcbalc+ZfO5b/+vkyAHS6CYVFCDtYR9Hi5qgdk31v23w==\";)";
+            int retorno = ImpressoraDLL.INSTANCE.ImprimeXMLCancelamentoSAT(dados, assQRCode, 0);
+
+            if (retorno == 0) {
+                System.out.println("Impressao de xml sat OK");
+            } else {
+                System.out.println("Erro. Retorno " + retorno);
+
 
             }
+        }
+    }
 
-            switch (escolha) {
+
+
+    public static void main(String[] args) {
+
+        while (true) {
+
+            System.out.println("\n============== MENU ==============\n");
+            System.out.println("1 - Configurar Conexão");
+            System.out.println("2 - Abrir Conexão");
+            System.out.println("3 - Impressão Texto");
+            System.out.println("4 - Impressão QRCode");
+            System.out.println("5 - Impressão Código de Barras");
+            System.out.println("6 - Impressão XML SAT");
+            System.out.println("7 - Impressão XML Cancelamento SAT");
+            System.out.println("8 - Abrir Gaveta Elgin");
+            System.out.println("9 - Abrir Gaveta");
+            System.out.println("10 - Sinal Sonoro");
+            System.out.println("0 - Fechar Conexão e Sair");
+
+            String opcao = capturarEntrada("Opção: ");
+
+            switch (opcao) {
+
+                case "0":
+                    fecharConexao();
+                    System.out.println("Encerrando.");
+                    return;
+
                 case "1":
                     configurarConexao();
                     break;
+
                 case "2":
                     abrirConexao();
-                case "3":
+                    break;
 
+                case "3":
+                    if (!conexaoAberta) { System.out.println("Abra a conexão primeiro."); break; }
+                    ImpressoraDLL.INSTANCE.ImpressaoTexto("Teste de impressao", 1, 4, 0);
+                    ImpressoraDLL.INSTANCE.AvancaPapel(2);
+                    ImpressoraDLL.INSTANCE.Corte(2);
+                    break;
 
                 case "4":
+                    if (!conexaoAberta) { System.out.println("Abra a conexão."); break; }
+                    ImpressoraDLL.INSTANCE.ImpressaoQRCode("Teste de impressao", 6, 4);
+                    ImpressoraDLL.INSTANCE.AvancaPapel(2);
+                    ImpressoraDLL.INSTANCE.Corte(2);
+                    break;
 
                 case "5":
-
+                    if (!conexaoAberta) { System.out.println("Conexão não aberta."); break; }
+                    ImpressoraDLL.INSTANCE.ImpressaoCodigoBarras(8, "{A012345678912", 100, 2, 3);
+                    ImpressoraDLL.INSTANCE.AvancaPapel(2);
+                    ImpressoraDLL.INSTANCE.Corte(2);
+                    break;
 
                 case "6":
-                    // --- IMPORTANTE ---
-                    // Este trecho permite ao usuário escolher um arquivo XML no computador.
-                    // Para funcionar, será necessário importar as classes de manipulação de arquivos e da interface gráfica:
-                    // import java.io.*;                    // Para trabalhar com arquivos (ex: File, IOException)
-                    // import javax.swing.*;                // Para usar o JFileChooser (janela de seleção de arquivos)
-                    //
-                    // A ideia: abrir uma janela para o usuário escolher o XML, ler o conteúdo do arquivo
-                    // e enviar para a função que imprime o XML de cancelamento do SAT.
-                    //
-                    // >>> Os alunos deverão implementar as partes de leitura do arquivo (função lerArquivoComoString)
-                    // e o controle de fluxo (switch/case, etc) conforme aprendido em aula.
+                    imprimeXMLSAT();
+                    ImpressoraDLL.INSTANCE.Corte(5);
+                    break;
 
                 case "7":
-                    // --- IMPORTANTE ---
-                    // Este trecho permite ao usuário escolher um arquivo XML no computador.
-                    // Para funcionar, será necessário importar as classes de manipulação de arquivos e da interface gráfica:
-                    // import java.io.*;                    // Para trabalhar com arquivos (ex: File, IOException)
-                    // import javax.swing.*;                // Para usar o JFileChooser (janela de seleção de arquivos)
-                    //
-                    // A ideia: abrir uma janela para o usuário escolher o XML, ler o conteúdo do arquivo
-                    // e enviar para a função que imprime o XML de cancelamento do SAT.
-                    //
-                    // >>> Os alunos deverão implementar as partes de leitura do arquivo (função lerArquivoComoString)
-                    // e o controle de fluxo (switch/case, etc) conforme aprendido em aula.
-
+                    ImprimeXMLCancelamentoSAT();
+                    ImpressoraDLL.INSTANCE.Corte(5);
+                    break;
 
                 case "8":
-
+                    if (!conexaoAberta) { System.out.println("Abra a conexão."); break; }
+                    ImpressoraDLL.INSTANCE.AbreGavetaElgin();
+                    break;
 
                 case "9":
-
+                    if (!conexaoAberta) { System.out.println("Conexão necessária."); break; }
+                    ImpressoraDLL.INSTANCE.AbreGaveta(1, 5, 10);
+                    break;
 
                 case "10":
+                    if (!conexaoAberta) { System.out.println("Conexão necessária."); break; }
+                    ImpressoraDLL.INSTANCE.SinalSonoro(4, 5, 5);
+                    break;
 
                 default:
-
+                    System.out.println("Opção inválida.");
             }
         }
     }
